@@ -3,19 +3,52 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import JokeForm from "../JokeForm";
 import Link from "next/link";
+// import axios from "axios";
 
 export default function Joke() {
   const [isEditMode, setIsEditMode] = useState(false);
   const router = useRouter();
   const { id } = router.query;
 
-  const { data, isLoading } = useSWR(`/api/jokes/${id}`);
+  const { data, isLoading, mutate } = useSWR(id ? `/api/jokes/${id}` : null);
 
-  function handleEdit(event) {
+  async function handleEdit(event) {
     event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const jokeData = Object.fromEntries(formData);
+
+    console.log(jokeData);
+
+    const response = await fetch(`/api/jokes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(jokeData),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (response.ok) {
+      mutate();
+    }
+
+    // const response = await axios.put(`/api/jokes/${id}`, jokeData);
+
+    // if (response.status) {
+    //   mutate();
+    // }
+
+    setIsEditMode(false);
   }
 
-  async function handleDelete() {}
+  async function handleDelete() {
+    const response = await fetch(`/api/jokes/${id}`, { method: "DELETE" });
+
+    if (!response.ok) {
+      console.log(response.status);
+      return;
+    }
+
+    router.push("/");
+  }
 
   if (isLoading) {
     return <h1>Loading...</h1>;
